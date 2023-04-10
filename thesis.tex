@@ -1,0 +1,783 @@
+% For copyright and license information, see uiucthesis2021.dtx and derivatives.
+\documentclass{uiucthesis2021}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{microtype}
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage[bookmarksdepth=3,linktoc=all,colorlinks=true,urlcolor=blue,linkcolor=blue,citecolor=blue]{hyperref}
+\usepackage[capitalize]{cleveref}
+\usepackage{biblatex}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+\usepackage{float}
+\usepackage[bottom]{footmisc}
+\usepackage{changepage}
+\usepackage[table]{xcolor}
+\usepackage{hyperref}
+ 
+% \usepackage{ruledchapters}  % example of compliant heading format, uncomment to use
+
+\usepackage{lipsum}  % just for placeholder code
+
+% uncomment the below to show a grid on all pages
+% \usepackage[grid, gridunit=in, gridcolor=blue!40, subgridcolor=blue!20]{eso-pic}
+
+\addbibresource{./references.bib}
+
+\newcounter{counterforappendices}
+
+\begin{document}
+\title{Synthesizing Network with relaxed Network Specifications on Network Emulators}
+\author{Hongshuo Zhang}
+\department{Electrical and Computer Engineering}
+\concentration{}
+\degreeyear{2023}
+\committee{
+    Professor Matthew C. Caesar}
+\maketitle
+\frontmatter
+
+\begin{abstract}
+
+\noindent Although network emulators such as MiniNet and GNS3 have streamlined network configuration, it remains a challenging task since complex network specification rules must always be provided and strictly adhered to. Existing research in network configuration synthesis mainly focuses on solving complex network specification rules, which can take several days to resolve. However, network specifications are not always complicated. In many cases, network operators focus only on simple objectives such as network delay and reliability. To achieve these simple objectives, we hypothesize that network specifications can be \textit{relaxed}, and networks can be synthesized with very few specification rules or even without any specification rule at all. This approach can save network operators significant time by simplifying both the network specifications they need to provide and the process of converting those specifications into network configurations. Therefore, this thesis focuses on the question of whether it is possible to synthesize a working network on network emulators with relaxed network specifications. \\
+
+\noindent To answer this question, we relax network specifications to include only routing strategies for the network. We then develop an architecture that supports network configurations with three types of routing strategies: generating and loading routes from software, as well as configuring two popular IGP protocols --- OSPF and EIGRP on network topologies. To demonstrate the functionality of the emulated network, we evaluate and assess our architecture in terms of the round-trip time of packets, network setup time, and network convergence time after abrupt network changes. Finally, based on empirical data, we explore how emulated networks can be specified to achieve better performance.\\
+
+
+\end{abstract}
+
+\begin{dedication}
+To my dear friends and family.
+\end{dedication}
+
+\begin{acknowledgments}
+\par This project was made possible with the support of many individuals. I would like to express my gratitude to my advisor, Matthew C. Caesar, who diligently read through my numerous revisions and helped make sense of the confusion. Additionally, I would like to extend my appreciation to my colleagues on this project: Jinyang Jia, Tianhao Yu, Yuantao Lu, and Zihan Shan, who provided me with continuous and unwavering support throughout my thesis work. I would also like to thank the University of Illinois Graduate College for awarding me financial support during my time at Illinois, which provided me with the financial resources necessary to complete this project. Lastly, I want to express my appreciation to all of my friends who endured this lengthy process with me, always offering support and love.
+\end{acknowledgments}
+
+{
+    \hypersetup{linkcolor=black}  % disable link coloring locally
+    \tableofcontents
+    % the Graduate College doesn't recommend including lot or lof
+    % \listoftables
+    % \listoffigures
+}
+
+\chapter{List of Abbreviations}
+
+\begin{abbrevlist}
+\item[ABR] Area Border Router
+\item[API] Application Programming Interface
+\item[ARP] Address Resolution Protocol 
+\item[AS] Autonomous System
+\item[DHCP] Dynamic Host Configuration Protocol
+\item[EIGRP] Enhanced Interior Gateway Routing Protocol
+\item[FD] Feasibility Distance
+\item[GUI] Graphic User Interface
+\item[IGP] Interior Gateway Protocol
+\item[IP] Internet Protocol
+\item[LSA] Link State Advertisement
+\item[MAC] Media-Access Control
+\item[MAS] Multi-Access Segment
+\item[OSPF] Open Shortest Path First 
+\item[SDN] Software Defined Networking
+\item[VPC] Virtual PC
+\end{abbrevlist}
+
+\mainmatter
+
+\chapter{Introduction}
+\noindent Deploying network configurations into functioning physical networks is a task with high stakes. If networks with incorrect configurations are deployed into production, businesses may face tens of thousands of dollars in losses due to unwanted downtime. To prevent such undesirable network shutdowns, networks are usually designed and configured as individual modules, enabling more rigorous testing of smaller networks.\\
+
+\noindent To closely examine modular networks, network emulators like MiniNet and GNS3 allow network operators to convert conceptual network topologies into software-emulated networks that are as realistic as physically deployed networks. In this case, network operators may address unexpected issues early on so that they do not occur during the physical deployment stage. However, network emulators are not easy to use. They are time-consuming to set up and require users to have a deep understanding of networking fundamentals to specify and analyze network behaviors. Therefore, there is a need to simplify how networks are synthesized on network emulators.\\
+
+\noindent Network operators typically perform three steps before a network is rolled out for deployment. Firstly, they provide a preliminary sketch of a network topology to roughly define the network devices used and connections between them. Secondly, the preliminary network topology sketch is then translated into a working network on a network emulator. Finally, the emulated network is thoroughly tested. Among these three steps, the second step puts the most amount of burden on network operators, as preliminary network topologies do not provide enough information needed to construct a working network. Therefore, a significant amount of time is spent on first designing network specifications and then deriving network configurations.\\
+
+\noindent Existing works mostly formulate network synthesis into a two-part problem --- Constraint Formulation and Satisfiability Solving. Firstly, network specifications are formulated into a set of Boolean constraints. Then, a set of specification-compliant network configurations are solved. However, solving complex satisfiability problems for network synthesis often cannot be achieved in polynomial time. Thus, existing research efforts mostly focus on how to formulate satisfiability problems that optimize speed and specification consistency. Although existing works greatly streamline the process of converting network specifications to network configurations, network operators would need to provide complex network specifications before synthesis. We argue that, in many cases, networks do not need to be over-specified. Network operators often focus on simple objectives such as network delay and reliability instead of specifying how every packet should be routed or how back-up routes should be defined if primary routes fail. Thus, we hypothesize that network specifications can be further simplified to include few specification rules or none at all before synthesis.\\
+
+\noindent Therefore, in this thesis, we explore the question: Is it possible to configure a network with \textit{relaxed} network specifications on network emulators? To achieve this, we relax network specifications to only require network-wide routing strategies. Upon relaxation, we then build a network configuration architecture that generates a fully working emulated network with network topology information and relaxed network specifications. Specifically, the architecture supports three popular routing strategies --- generating and loading static routes from software, as well as configuring OSPF and EIGRP. To demonstrate the functionality of our proposed architecture, we also propose standalone methods to test networks configured with our architecture on a network emulator. Finally, based on the empirical data, we explore how emulated networks can be specified to achieve better performance. \textcolor{red}{Add key findings and results in here}, \textcolor{red}{add future work to chapter 6 and mention that here}.\\
+
+\noindent The thesis is structured as follows. Chapter \hyperref[c2]{2} discusses related work to this thesis. Chapter \hyperref[c3]{3} describes the implementation details of our configuration architecture. Chapter \hyperref[c4]{4} explores methods to test emulated networks, evaluates our architecture using these methods, and analyzes the empirical results from tests. Chapter \hyperref[c5]{5} discusses the design limitations of this thesis and proposes new future research directions to address these limitations. Lastly, Chapter \hyperref[c6]{6} concludes the thesis.\\
+
+
+\chapter{Related Work}
+\label{c2}
+\noindent In this chapter, we focus on two main areas that are relevant to this thesis: Network Configuration Synthesis and Routing Protocol Analysis. First, we review related works in Network Configuration Synthesis, which involves generating the correct configurations for a functional network given a set of inputs. Next, we discuss related works in Routing Protocol Analysis, which involves analyzing different routing protocols in various network scenarios and evaluating their performance based on metrics that are important to network operators. We conclude this chapter by summarizing our contributions to the field.
+
+\section{Network Configuration Synthesis}
+\noindent The task of generating routing configurations for networks has always been challenging for network operators. In general, a correctly configured network must satisfy two basic requirements: packets must be able to flow freely across the network, and packets must be routed according to the specifications provided by network operators, if any. Failure to generate accurate network configurations can result in severe consequences. Even though most network operators possess extensive knowledge of networking, critical configuration errors can still occur due to unforeseen human factors. For instance, in 2021, Facebook experienced a system-wide outage lasting a few hours due to a routing misconfiguration. \cite{isaac_2021}.\\
+
+\noindent To ensure that network routing configurations are correct, network operators frequently utilize network verification tools to verify configurations before deployment \cite{10.1145/3098822.3098834,10.5555/2789770.2789803}. These tools generally verify the correctness of network routing configurations by searching for configuration violations that do not meet all network specifications, and then provide a backtrace to operators if violations arise. However, this approach is still less than optimal since network operators must still design new routing configurations to address violations. \\
+
+\noindent We argue that automatic network configuration synthesis tools provide better utility for network operators. Essentially, the synthesis of network configurations can be reduced to the following problem: given a user-supplied network specification $N$ that specifies routing protocols and a set of requirements $R$ that outline how packets should be forwarded from a source to a destination, find configurations $C$ that enable the satisfaction of requirements $R$ on the network topology $T$. \cite{10.1145/3098822.3098834}. This problem is addressed differently by various groups of researchers. SyNET \cite{10.1145/3098822.3098834} generates routing configurations from scratch by reducing $N$ and $R$ to a constraint program with predicate dependencies. It then recursively backtracks potential solutions from the lowest strata to the input level. NetComplete \cite{10.5555/3307441.3307491} completes incomplete routing configurations by searching for announcement attributes that are undetermined and satisfy the requirements specified in the specification. These tools usually employ SMT solvers such as z3 \cite{de2008z3} to find configurations that comply with the specifications. However, configuration searching is computationally intensive, and it is not uncommon for it to take several days to find routing configurations for a network of medium size with 50 routers \cite{10.5555/3307441.3307491}. To address this performance bottleneck, approaches such as Zeppelin \cite{10.1145/3179425} and Propane/AT \cite{10.1145/3062341.3062367} trade configuration generality for speed by templating common configurations of popular routing protocols. Recently, the problem of network configuration synthesis has also been formulated as a machine learning problem to further enhance the speed of performance. DeepBGP \cite{10.1145/3405671.3405816} employs deep reinforcement learning to discover configurations that achieve the highest evaluation rewards. Meanwhile, the work carried out by Beurer-Kellner et al \cite{beurerkellner2022learning} further streamlines the process by formulating the configuration searching problem as an encoder-processor-decoder neural network.\\
+
+\noindent To summarize, in conventional network configuration models, searching for configurations for commonly used routing protocols cannot be accomplished in polynomial time \cite{9940325}. Even with the use of the latest deep learning methods to speed up the process, an enormous amount of training data is needed, and training can take several days. It can be argued that for smaller and modular networks, such endeavors would not be necessary. Instead of hard-coding network specifications detailing the specific path packets should take from point $A$ to point $B$, network operators often relax the specification requirements to only focus on the shortest path between any two endpoints on a topology and assume that all network devices belong to a single administration. \textit{Thus, our network is different than existing work such that our synthesis problem moves away from configuration hard-cracking to formulating uniform routing strategies that optimize simple objectives.} Therefore, research efforts naturally shift from analyzing the speed of synthesis to the quality of routing protocols used by the configuration synthesis tool, focusing on objectives such as traffic speed and network resilience after failures \cite{9358327}.
+
+\section{Routing Protocol Analysis}
+\noindent Most network configuration synthesis tools \cite{beurerkellner2022learning,9940325, 10.1145/3405671.3405816,10.1145/3062341.3062367,10.5555/3307441.3307491} tend to focus on two routing algorithms, namely OSPF and BGP. These two routing protocols are chosen not only because they are capable of configuring both intra-AS routes and inter-AS routes, but also because they are frequently used as the standard for comparing synthesis speeds between different tools. However, OSPF and BGP do not provide a complete picture of all routing protocols. We argue that network configuration synthesis researchers should also consider link state protocols such as IS-IS \cite{oran1990osi}, distance vector protocols such as RIP \cite{malkin1998rip}, and hybrid protocols such as EIGRP \cite{eigrp}. \\
+
+% \noindent Existing works cross-compare different routing protocols on network convergence time \cite{10.1145/1070873.1070877,7399308,tsegaye2012ospf,okonkwo2020comparative}, load balancing \cite{7399308}, average network delay \cite{6636217,8067958,9358327}, and overall CPU usage \cite{121955,6533929}. Among all popular routing protocols, OSPF delivers better performance on average network delay and load balancing \cite{7399308}, while EIGRP delivers a better performance on CPU usage and network convergence time \cite{6533929}. However, most previous works do not explore the configuration parameters available to these routing protocols and default parameters are usually used instead. We argue that there are potentials where configuring non-default configuration parameters may optimize network performance. One of the key advantages of OSPF is that networks can be subdivided into different administrative areas not only to improve network manageability, but also minimize the toll caused by link flaps. On the other hand, route summarization is also a popular option for EIGRP that network operators often switch off in configuration. Thus, in this thesis, we further explore OSPF and EIGRP by analyzing how a network performs in terms of area assignments in OSPF and route summarization in EIGRP. \\
+
+\noindent Existing works compare various routing protocols based on network convergence time \cite{10.1145/1070873.1070877,7399308,tsegaye2012ospf,okonkwo2020comparative}, load balancing \cite{7399308}, average network delay \cite{6636217,8067958,9358327}, and overall CPU usage \cite{121955,6533929}. Among the popular routing protocols, OSPF performs better on average network delay and load balancing \cite{7399308}, while EIGRP performs better on CPU usage and network convergence time \cite{6533929}. However, most previous studies have not explored the potential benefits of configuring non-default parameters for these routing protocols, with default parameters often being used instead. We argue that configuring non-default parameters may optimize network performance in certain scenarios. \\
+
+\noindent One of the significant advantages of OSPF is that networks can be divided into different administrative areas, not only to enhance network manageability but also to reduce the impact of link flaps. In contrast, route summarization is a popular option for EIGRP that network operators often disable in configuration. Therefore, in this thesis, we further investigate OSPF and EIGRP by examining how network performance is affected by area assignments in OSPF and route summarization in EIGRP. \\
+
+\noindent In addition, routing protocols are often compared on network emulators such as OpNet \cite{Kodzo2016,okonkwo2020comparative,6533929} and GNS3 \cite{7250212}. However, previous research has focused extensively on the performance aspects of different routing algorithms, while the implementation details of constructing emulated networks on network emulators are often overlooked. Moreover, many research works do not clearly define how key metrics such as network convergence time, load balancing, and average network delay are computed. To address these issues, we not only implement algorithms that construct emulated networks on network emulators but also explain how we obtain values for key performance metrics.
+
+\section{Thesis Contributions}
+\noindent \textcolor{red}{Thesis Contributions needs work} We present the following contributions in this thesis: 
+\begin{itemize}
+    \item We develop an architecture to configure a network that supports three routing strategies --- pre-computed route generation and loading, OSPF with different area assignments, and EIGRP with the option of disabling auto route summarization. 
+    \item We have designed algorithms that perform automatic IP address assignment on network devices, assign OSPF areas to network topologies, and configure virtual links on OSPF-configured networks. 
+    \item We clarify how round trip time of packets, network setup time, and network convergence are computed.
+    \item We cross-compare and analyze different specification options on round trip time of packets, network setup time, and network convergence time after sudden network changes. \textcolor{red}{This needs to be rethinked, because it is not very clear. I most definitely need to remove it later.}
+\end{itemize}
+
+\chapter{Synthesizing Networks}
+\label{c3}
+\noindent One of the primary reasons why networks are time-consuming to set up in network emulators is that network specifications and configurations need to be carefully defined by network operators for the network to synthesize. Filling in the specification gap for networks can put a lot of strain on network operators. Figure \hyperref[f31]{3.1} shows a typical preliminary network topology provided by users.\\
+
+\label{f31}
+\begin{figure}[H]
+\includegraphics[width=9cm]{user_spec.pdf}
+\centering
+\caption{An example of a user-supplied network topology}
+\centering
+\end{figure}
+
+\noindent At first glance, only three types of information can be gleaned from Figure \hyperref[f31]{3.1}: the types of network devices, the connections between network devices, and the positions of the devices relative to one another. However, additional information is required to make a network fully functional on network emulators. 
+\textcolor{red}{I think you should either talk explicitly that users may provide simplified configurations, for example through hand-drawn sketches -- or if there's no reason for that to be hand drawn you should draw it via a drawing program so it looks more professional}
+\begin{itemize}
+    \item Static information, such as the MAC addresses of network devices and the network interfaces that the devices use for connections, is included in the topology file and cannot be modified by users after the topology file is generated.
+    \item Dynamic information, such as IP addresses for network devices and routing configurations for routers, can be modified by network operators as needed.
+\end{itemize}
+
+\noindent In this chapter, we present an architecture that automatically configures a functional network on network emulators based on the network topology provided by the user and their chosen routing strategy. The chapter is structured as follows: Firstly, we discuss how static information such as network topology information is parsed into a network before construction on the network emulator. Next, we describe the process of assigning IP addresses to network devices to enable communication between them. Lastly, we explain how three types of routing strategies, namely pre-computed routes, OSPF, and EIGRP, are configured. \textcolor{red}{These three things came out of the blue. I probably should describe this generally first, then say to grapple with practical considerations you apply it to intradomain routing, specifically to those two protocols} Figure \hyperref[f32]{3.2} provides an overview of our proposed architecture design.
+
+\label{f32}
+\begin{figure}[H]
+\includegraphics[width=16cm]
+{routing_overview.pdf}
+\centering
+\caption{An overview of the architecture design}
+\centering
+\end{figure}
+
+\section{Translating Topology Information into Network Emulator}
+\noindent \textcolor{red}{This chapter should not be kept because it does not relate directly to the main scientific contribution of this thesis. I probably need to condense these information and merge it with 3.1}
+\noindent Before a network can be deployed on a network emulator, network topology information must be translated into the emulator so that it knows critical details such as which network devices should be deployed, which network interfaces should be used for link connections, and where each network device should be located. In this section, we discuss how our architecture translates user-specified topology information into network emulators before synthesis. \\
+
+\noindent In our architecture, topology information is received as a set of two inputs: a node dictionary that contains the type of each node detected, and an adjacency matrix that specifies the connections between nodes. Most information about links and nodes can be derived from these resources. However, additional information is required for the network topology to be successfully translated by the network emulator, and we generate this information as follows: \\
+\begin{itemize}
+    \item The project, node, and link IDs follow the format of \{8\}-\{4\}-\{4\}-\{4\}-\{12\}, where each number in the curly braces represents the number of alphanumeric characters. These identifiers are randomly generated and are used to link each node or link to the corresponding configuration in the project-files folder.
+    \item Router MAC addresses are used for ARP queries. These addresses follow the format of c2\{2\}.\{4\}.\{4\}, a failure to follow this format will result in the ARP protocol failing to associate the correct MAC address to the correct interface. These MAC addresses are also randomly generated.
+    \item To establish a connection with a router, a set of adapter and port numbers are required. These numbers are assigned sequentially from a list of available adapter-port combinations. If a router has used up all available ports in all adapters, any subsequent connections with the router will be dropped.
+    \item Console IDs are assigned to network devices for API connections, and they are assigned sequentially based on the order in which nodes appear in the node dictionary. These IDs serve as the port numbers for API connections.
+    \item Optionally, node position data is also required to determine the placement of each node on the network emulator GUI. We assign a random position for each node using a spring layout, where the length of each edge is approximately equal and edges rarely cross over.
+\end{itemize}
+\noindent Once this information is generated, IP addresses and routing configurations are necessary for successful network emulation. The device-level configuration can be divided into two separate components: IP address assignment and routing protocols. Further details on these two components will be provided in Section \hyperref[s33]{3.3} and Section \hyperref[s34]{3.4}, respectively.
+
+\label{s33}
+\section{Assigning IP Addresses to Network Devices}
+\noindent \textcolor{red}{Jumping into the mechanism way too quickly. Here I probably need a paragraph to describe why we need to assign IP addresses to the devices, and what are the challenging aspects of it.} After generating the network topology file, the next step is to assign IP addresses to the devices on the network so they can be addressed by other routers. In our thesis, we focus on three types of network components: routers, VPCs, and switches. Only router interfaces and VPCs require IP addresses and their corresponding subnets. These addresses can be assigned manually or with a designated DHCP server. Therefore, this section discusses our IP address assignment algorithm, which automates the assignment of IP addresses to network devices on a given topology. \\
+
+\begin{algorithm}
+\caption{IP-assignment}\label{alg:cap}
+\begin{algorithmic}
+\State $switches, ip{\text -}assignment \gets \{\}, \{\}$
+\State $subnet{\text -}dict \gets$ a dictionary of all devices under a subnet primarily identified by a switch
+\State $r2r{\text -}conn \gets $ a list of router to router connections
+\State $base{\text -}address \gets $ 10.1.1.2
+\For{$switch \in switches$}
+    \State $devices \gets $ all unvisited devices under switch
+    \State $subnet{\text -}dict[switch] \gets devices$
+\EndFor
+\\
+\For{$switch \in subnet{\text -}dict$}
+    \State advance $base{\text -}address \gets$ to next subnet
+    \For {$device \in subnet{\text -}dict[switch]$}
+        \If{$device$ is a router interface and $subnet{\text -}dict[switch]$ is not a router-only MAS}
+            \State $ip{\text -}assignment[device] \gets $ first address in
+                               subnet of $base{\text -}address$
+        \Else
+            \State $ip{\text -}assignment[device] \gets base{\text -}address$
+        \EndIf
+        \State advance $base{\text -}address $ to next address in subnet of $base{\text -}address$
+    \EndFor
+\EndFor
+\\
+\For{($r1{\text -}int, r2{\text -}int$) $\in r2r{\text -}conn$}
+    \State assign $subnet{\text -}range$ to the next free subnet range
+    \If {$r1{\text -}int$ and $r2{\text -}int$ are not assigned IP addresses}
+        \State $ip{\text -}assignment[r1{\text -}int] \gets $ second address in $subnet{\text -}range$
+        \State $ip{\text -}assignment[r2{\text -}int] \gets $ third address in $subnet{\text -}range$
+    \EndIf
+\EndFor
+\State return $ip{\text -}assignment$
+\end{algorithmic}
+\end{algorithm} 
+
+\noindent For manual IP address and subnet assignment, we use Algorithm 1. The algorithm first gathers all unvisited non-switch devices under a switch. Then, all devices under a specific switch will be assigned to a subnet. For subnets that are not a MAS\footnote{Multi-Access Segment}, \textcolor{red}{Briefly explain what MAS is, and what is so significant about it.} router interfaces are assigned the second and third available IP address in the subnet. The first address in a subnet is not assigned primarily to avoid confusions in routing configurations. The addresses for each router will be sequentially for MASs. For non-router-only subnets, the IP address for each router interface serves as the gateway address for all VPCs. All external packets departing from, or receiving by, any VPC will pass through the router interface that is assigned to the VPC's gateway address. After all devices in the subnet are assigned IP addresses, the base address will be shifted to a new subnet. Finally, a new subnet is assigned to each router-to-router connection. Each router interface at the either end of the router to router connection will take one available IP in the subnet. In this case, only two IP addresses per router-to-router subnet are taken. \\
+
+\noindent It can be argued that the IP subnet space between two routers could be further condensed. However, this is not done for two major reasons. Firstly, network operators only need to provide modular network topologies, so only a limited number of connections are expected to be assigned for a topology. Therefore, this approach will not cause any IP address shortages. More importantly, our architecture is designed for network operators to test networks and troubleshoot issues if they arise. Having subnet spaces with different sizes for different kinds of connections would be problematic for network operators to manage.\\ 
+
+\label{f33}
+\begin{figure}[H]
+\includegraphics[width=12cm]{example_topo.pdf}
+\centering
+\caption{Example of a topology that this algorithm is designed to fail}
+\centering
+\end{figure}
+
+\noindent This algorithm is valid for most topologies. However, Figure \hyperref[f33]{3.3} is an example of a topology that this algorithm does not support. Based on the figure, Switch1 is assigned to multiple routers in addition to two VPCs. It can be argued that such topologies are seldom valid since a VPC can only be assigned one gateway IP address\footnote{Major computer operating systems, such as Windows and Linux, support multiple gateway address assignments. In that case, these topologies are valid.}. No matter which router interface is assigned as the gateway IP address, a VPC cannot reach every network component in the topology. For example, assigning the gateway address from R1 blocks all departing and receiving traffic from R2 and PC4, and vice versa. \\
+
+\noindent On the other hand, DHCP servers can also be used for configuration. However, DHCP servers are not used to assign IP addresses for a similar reason. The assigned IP addresses would not follow any apparent patterns apart from being in the same subnet, which can also be inconvenient for network operators to understand.
+
+\label{s34}
+\section{Configuring Routing Strategies on Network}
+\noindent \textcolor{red}{From this point onwards, there is no logical connection to the rest of the thesis anymore. Use another paragraph to focus on why configuring routing strategies after IP address assignment is related to the thesis statement.} Once IP addresses have been assigned to all devices, routing information is necessary to enable packets to reach any destination within the network. To achieve this, our architecture implements three different routing configuration strategies. The first method involves computing routes from software, which ensures the sanity of the provided network topology. Meanwhile, OSPF and EIGRP are two popular IGP routing protocols used by network operators to configure a network. In this section, we dive into the algorithm used to configure each of the three supported routing strategies in detail. \\
+
+\label{s341}
+\subsection{Computing Routes on Topology from Software}
+\noindent Not all user-supplied network topologies are sensible. While network emulators can detect obvious mistakes like device self-connections, other potential errors like topology discontiguity and non-sensible device connections can go unnoticed. To perform a basic sanity check on the topology graph, we manual compute routes on a topology. We consider network specifications to be sensible only if routes can be successfully computed. Once we have an input topology and a list of IP addresses associated with the network components, we use Algorithm 2 to generate routing information for each router. \\
+
+\noindent Algorithm 2 first filters out all connections that are neither router-to-router nor router-to-switch. Then, the algorithm builds the routing graph with the remaining connections that are incident to at least one router. Finally, since packets are shared between different interfaces within a router, therefore, it is also imperative to connect all interfaces within a router for the routing graph. If there exist MASs in the topology, the algorithm identifies all router-based MASs in the topology, elects a leader router among all routers in the MAS, and finally converts all router-to-switch connections into router-to-router connections from all other routers to the leader router. Figure \hyperref[f34]{3.4} is an example of a router-based MAS, and its equivalent routing graph connections after the conversion.\\
+
+\label{f34}
+\begin{figure}[H]
+\includegraphics[width=14cm]{MAS example.pdf}
+\centering
+\caption{Example of a router-based MAS and its equivalent representation in the routing graph}
+\centering
+\end{figure}
+
+\begin{algorithm}[H]
+\caption{configure-forwarding}\label{alg:cap}
+\begin{algorithmic}
+    \State $forwarding{\text -}table \gets \{\}$
+    \State $router{\text -}incident{\text -}conn \gets $ a list of connections that connect at least one router. 
+    \For{($router, device$)$ \in router{\text -}incident{\text -}conn$}
+        \If {$router$ is a MAS}
+            \State store new connection from router to leader of MAS
+        \Else
+            \For {$interface \in router$}
+                \If {$device$ is of type $router$}
+                    $end{\text -}router \gets device$
+                    \For {$dest{\text -}interface \in end{\text -}router$}
+                        \State store new connection from $source{\text -}int$ to $dest{\text -}int$
+                    \EndFor
+                \Else
+                    \State store new connection from $source{\text -}int$ to device
+                \EndIf
+            \EndFor
+        \EndIf
+    \EndFor
+    \\
+    \State $G \gets$ the graph constructed from stored connections.
+    \State run Dijkstra algorithm on $G$
+    \For {$start{\text -}node \in G$}
+        \If {$start{\text -}node$ is a router}
+            \For {$end{\text -}node \in G$}
+                \If {$start{\text -}node \neq end{\text- }node$}
+                    \State $end{\text- }ip \gets ip{\text- }assignment[end{\text- }node]$
+                    \State $path{\text -}hops \gets $shortest path from $start{\text-}node$ to $end{\text -}node$
+                    \For {$hop$ and $next{\text-}hop \in path{\text-}hops$}
+                        \If {($hop, next{\text-}hop$) $\in r2r{\text-}conn$ and $hop$ and $next{\text-}hop$ not in same router}
+                            \State $next{\text-}node{\text-}ip \gets ip{\text-}assignment[next{\text-}hop]$
+                            \State add ($end{\text-}ip, netmask, next{\text-}node{\text-}ip$) to $forwarding{\text-}table[$start{\text-}node$]$
+                        \EndIf
+                    \EndFor
+                \EndIf
+            \EndFor
+        \EndIf
+    \EndFor
+   \\
+   \State Merge entries for different interfaces in a router 
+   into a single list.
+   \For {($end{\text-}ip, net{\text-}mask, next{\text-}ip$) $\in forwarding{\text-}table$}
+        \State $end{\text-}ip \gets end{\text-}ip \times net{\text-}mask$
+   \EndFor
+   \State remove duplicates of each routing rule in $forwarding{\text-}table$
+   \State return $forwarding{\text-}table$
+\end{algorithmic}
+\end{algorithm} 
+
+\noindent After the connection conversion, it is important to note that all connections in the physical topology remain the same. The algorithm only modifies how each connection is represented in the routing graph, which will be used later. This conversion for MASs is necessary because limiting the number of edges in the routing graph slightly reduces the overall running time complexity of the algorithm as the topology scales. Figure 3.5 shows how each case is exhibited in the routing graph.\\
+
+\label{f35}
+\begin{figure}[H]
+\includegraphics[width=14cm]{MAS detailed.pdf}
+\centering
+\caption{Interface-level example of a router-based MAS and its equivalent in the routing graph}
+\centering
+\end{figure}
+
+\noindent Similar to routers, Ethernet switches transmit incoming packets to all interfaces of the switches. Therefore, to establish connectivity between routers that are incident to Ethernet switches, we would also need to connect all interfaces of the Ethernet switch to each other. From Figure \hyperref[f35]{3.5}, connections among interfaces alone in the routing graph contribute 15 links to the routing graph. For a MAS, since every router interface that  directly connects to the Ethernet switch belongs to the same subnet, a MAS is functionally equivalent to a topology where routers directly connect to all other routers. To shrink the number of edges while maintaining connectivity from one router to all other routers, an interface is elected with the highest numbered IP address as the leader, and connect every router to the leader in the routing graph. From the figure on top, this arrangement only requires 5 links. It is also important to note that the connections in the routing graph are not and do not need to be equivalent to the actual connections. The graph from the second figure is impossible to construct in a physical topology because each router interface only accepts one single connection.\\
+
+\noindent The algorithm then formulates the routing graph as an equally weighted and undirected graph. To generate routes for each router, the Dijkstra algorithm is run on every node pair in the topology. It is worth noting that since we have an equally weighted routing graph, we can also use Breadth-first search with the same running time complexity. It has been proven that for an unweighted graph, all subpaths in the Dijkstra algorithm are also guaranteed to be the best path between any intermediate nodes. Therefore, the algorithm could be modified to save all intermediate best paths without the need for extra Dijkstra runs. Currently, however, the algorithm generates the best path for every single node pair.\\
+
+\noindent The routing algorithm scans each node and its subsequent node in the shortest route after finding the shortest route between two routers. It considers the connection between the two nodes only if both nodes are router interfaces and do not belong to the same router. If a connection in the routing graph satisfies these conditions, the node can route all packets carrying the IP address of the destination node from a node to its subsequent node. The routes originating from different router interfaces within the same router are merged into a list of routes that leave from the same router. Finally, since many destination nodes in the routing graph belong to the same subnet, routes are summarized by subnet prefixes.\\
+
+\noindent Finally, after the routes are generated, network operators may choose to load them into routers to see how the network performs. To load the routes into a routing table, each router needs a list of routes formatted as a tuple containing the following information: 
+
+\begin{itemize}
+    \item $end{\text -}ip$: the destination IP of the packet in transit.
+    \item $netmask$: the destination netmask of $end{\text -}ip$'s subnet.
+    \item $next{\text -}ip$: the interface IP that the packet needs to be delivered to.
+\end{itemize}
+
+\noindent Essentially, these tuples instruct routers to route all packets with IP addresses that belong to the same subnet as $end{\text -}ip$ to the interface with the IP address of $next{\text-}ip$.\\
+
+
+\noindent Although setting up routing with computed routes is faster than the other two routing protocols due to its advanced knowledge of the network topology, it does not support adjacency change handling or failure detection like OSPF and EIGRP do. Therefore, if there are node or link changes, route forwarding may fail. Consequently, this method is not suitable for real-world scenarios, and it can only be used to verify the correctness of the given network topologies.\\
+
+\label{s342}
+\subsection{Configuring OSPF on Network Routers}
+\noindent To configure the OSPF routing protocol, network topologies need follow the following constraints:
+\begin{itemize}
+    \item The topology lies entirely within a single autonomous system.
+    \item There may be one or more OSPF areas in the topology.
+    \item There may be cases where link state updates might not be reachable from the backbone area, in which case a virtual-link must be established.
+    \item Each area in the topology is either a backbone area (area 0) or a standard area. 
+\end{itemize}
+\noindent OSPF requires routers to be assigned to an OSPF area, with a backbone area being mandatory for the protocol. While it is possible to assign all network interfaces to the same OSPF area, this approach is not recommended for networks with memory-constrained routers as the number of devices on the network scales up. When adjacency changes occur in any OSPF area, all routers within that area must recompute their link state databases. This becomes more complicated as the number of routers within an OSPF area grows, and routers also need to store all routes to other parts within the area. This becomes problematic for routers with limited memory capacities. Hence, it is important to consider using multi-area OSPF.\\
+
+\subsubsection{Assigning OSPF Areas to Router Interfaces}
+\noindent In this framework, users have the ability to configure each area to not exceed a certain size. To control the number of routers in each area and ensure the integrity of each inter-area connection, Algorithm 3 and Algorithm 4 are used.\\
+
+\begin{algorithm}[H]
+\caption{assign-ospf-area}\label{alg:cap}
+\begin{algorithmic}
+    \State $AA, inverse{\text-}AA, incident{\text-}set\gets $returned from graph-partition
+    \State $area{\text-}router{\text-}count \gets $dictionary that holds the number of routers in each OSPF area
+    \State $conns, routers \gets$ a list of all connections and routers 
+    \State assign all routers in any MAS into another area
+    \State mark all routers in $incident{\text-}set$ as border routers
+    \For{$router \in inverse{\text-}AA$}
+        \If {$router$ is not a border router}
+            \State assign all router interfaces in use to the area of $inverse{\text-}AA[router]$
+        \EndIf
+    \EndFor
+    \\
+    \For {($start{\text-}router, end{\text-}router$) $\in incident{\text-}set$}
+        \If {neither $start{\text-}router$ nor $end{\text-}router$ belong to a MAS}
+            \State $start{\text-}interface, end{\text-}interface \gets$ the interface data that corresponds to the connection
+            \If {$area{\text-}router{\text-}count[inverse{\text-}AA[start]] < area{\text-}router{\text-}count[inverse{\text-}AA[end]]$}
+                \State assign both $start{\text-}interface$ and $end{\text-}interface$ to area of $inverse{\text-}AA[start{\text-}router]$
+                \State increment $area{\text-}router{\text-}count[inverse{\text-}AA[start{\text-}router]]$ by $2$
+            \Else 
+                \State assign both $start{\text-}interface$ and $end{\text-}interface$ to area of $inverse{\text-}AA[end{\text-}router]$
+                \State increment $area{\text-}router{\text-}count[inverse{\text-}AA[end{\text-}router]]$ by $2$
+            \EndIf
+        \EndIf
+    \EndFor
+    \\
+    \For {($start{\text-}router, end{\text-}router$) $\in conns$}
+        \State $start{\text-}interface, end{\text-}interface \gets$ the interface data that corresponds to the connection
+        \If {both $start$ and $end$ belong to a MAS}
+            \State assign both interfaces to area of MAS of $start$
+        \ElsIf {only $start$ belong to a MAS}
+            \State assign both interfaces to area of MAS of $start$
+        \ElsIf {only $end$ belong to a MAS}
+            \State assign both interfaces to area of MAS of $end$
+        \EndIf
+    \EndFor
+    \\
+    \For {$router$ in $routers$}
+        \State $max{\text -}area \gets$ largest area among all assigned areas in $router$
+        \For {$interface \in router$}
+            \If {$interface$ is not assigned an area}
+               assign $interface$ to $max{\text -}area$
+            \EndIf
+        \EndFor
+    \EndFor
+    \State return
+\end{algorithmic}
+\end{algorithm} 
+
+\begin{algorithm}[H]
+\caption{graph-partition}\label{alg:cap}
+\begin{algorithmic}
+    \State $allocated{\text -}nodes \gets $allocation of nodes into distinct appropriately sized groups
+    \State $group{\text -}area{\text -}assignment, inverse{\text -}group{\text -}area{\text -}assignment \gets \{\}, \{\}$
+    \State $group{\text -}connectivity{\text -}list \gets$a dictionary holding the number of adjacent groups per group
+    \\
+    \State $incident{\text -}set \gets$ a set that holds all inter-group router-to-router connections
+    \State add $group{\text -}connectivity{\text -}list$ a large number to adjacencies of centrally located groups
+    \State sort $group{\text -}connectivity{\text -}list$ in descending order by adjusted group adjacencies
+    \State $area{\text-}id \gets 0$
+    \\
+    \For{$group \in group{\text -}connectivity{\text -}list$}
+        \State $group{\text -}area{\text -}assignment[group] \gets area{\text-}id$
+        \State $inverse{\text-}group{\text -}area{\text -}assignment[area{\text-}id] \gets group$
+        \State increment $area{\text-}id$
+    \EndFor
+    \State return $group{\text-}assignment, inverse{\text-}group{\text-}assignment, incident{\text-}set$
+\end{algorithmic}
+\end{algorithm} 
+
+\noindent The algorithm for OSPF area assignment is carried out in two different stages: graph partition and OSPF area assignment. Graph partition divides all routers in a topology into different general OSPF areas, while OSPF area assignment assigns an OSPF area to each individual interface of a router. Specifically, the graph partition algorithm first divides each router in a router graph into many connected components, ranks each component by the number of adjacent components, and finally assigns the backbone area to the graph component that is mostly centrally located\footnote{The center of a graph is the set of nodes with an eccentricity equal to the radius.} located in the graph. If there are multiple groups that are similarly centrally located, ties are broken by the most number of group adjacencies. This is done to minimize the number of virtual links set up between the backbone area and other areas that are not directly connected to the backbone area. According to the OSPF protocol, routers in each area are only aware of the routes within the area, and route summarization is only performed at each ABR. The first step only assigns general OSPF areas due to two main reasons. Firstly, routers may sit on multiple areas, so the area assignment for each router interface, should it be a router spanning multiple areas, should be size-balanced. Secondly, the first general OSPF assignment fails to take MASs into account, in which case all of the routers within a MAS need to share the same OSPF area because they share the same subnet range. In this implementation of the graph partition algorithm, none of the routers that belong to a MAS will be assigned an area. \\
+
+\noindent To assign OSPF areas at each router interface level, the algorithm first assigns new OSPF areas to interfaces that are directly incident to switches. This is not done at the first stage since it needs to be guaranteed that all routers in a MAS need to share the same area. For each inter-area connection, both end interfaces of the connection are assigned an area with fewer routers. Then, for any connection that has at least one end that is part of a MAS, the OSPF area of both interfaces is assigned to the same area assigned to the MAS. Finally, for all interfaces that have not been assigned, e.g., the interfaces that do not connect to any router, the interface is assigned to the OSPF area with the largest area number already assigned to the existing interfaces in the same router.\\
+
+\subsubsection{Connecting Isolated Areas to Backbone with Virtual Links}
+\noindent According to the OSPF routing protocol, virtual link setups are necessary when an OSPF area is not directly connected to the backbone area. In this case, summarized routing updates will not be sent to the detached OSPF areas, and packets originating from such areas cannot travel to other areas and vice versa. Figure \hyperref[c36]{3.6} illustrates how a virtual link is set up in this scenario. \\ 
+
+\label{f36}
+\begin{figure}[H]
+\includegraphics[width=15cm]{virtual-link.pdf}
+\centering
+\caption{Example of a virtual link connection over a transit area}
+\centering
+\end{figure}
+
+\noindent In Figure \hyperref[c36]{3.6}, a virtual link is established between the ABR that is in the source area and the transit area, and the ABR that is in the transit area and the destination area. The virtual link creates a backbone area interface between the two ABRs, which in turn grants the non-backbone area ABR access to the backbone area. In this case, routing information can be shared with the isolated source area by the ABR between the source and the transit area. Additionally, virtual links are not only applicable to isolated areas that are one hop away from the backbone area. If the destination area is also a non-backbone area, another virtual link can be established between the current transit area and the area one hop closer to the backbone, passing over the current destination area. Algorithm 5 is used in this framework to set up virtual links. \\
+
+\begin{algorithm}[H]
+\caption{setup-virtual-links}\label{alg:cap}
+\begin{algorithmic}
+\State $AG \gets$ a graph constructed from area adjacencies
+\State $bypassed{\text-}router{\text-}triplets \gets $ a set of two router interfaces connected via a virtual link
+\State $areas \gets$ a list of all OSPF areas
+\State $ABR{\text-}interfaces \gets$ a list of ABR interfaces
+\State $ospf{\text-}area \gets $ a dictionary of OSPF area assignment per router interfaces
+\State $virtual{\text-}link{\text-}setup \gets $ a dictionary of virtual link connections by router 
+\For {$area \in areas$}
+    \State $best{\text-}path \gets $ the shortest path between $area$ to backbone
+    \If {length of $best{\text-}path >= 3$}
+        \State $start, after{\text-}start \gets$ the first and second area in the area-path
+        \State $before{\text-}end, end \gets$ the second to last and the last area in the area-path
+        \For {$source{\text-}router{\text-}info \in ABR{\text-}interfaces[(start, after{\text-}start)]$}
+            \For {$dest{\text-}router{\text-}info \in ABR{\text-}interfaces[(before{\text-}end, end)]$}
+                \State $current{\text-}path \gets$ shortest path between $source{\text-}router{\text-}info$ and $dest{\text-}router{\text-}info$
+                \If {$current{\text-}path$ is shorter than $best{\text-}path$}
+                    \State $best{\text-}path \gets current{\text-}path$ 
+                \EndIf
+            \EndFor
+        \EndFor
+        \\
+        % This is going to be REALLY confusing, needs to elaborate a little bit more. 
+        \State $s{\text-}r{\text-}int \gets $ first interface of $best{\text-}path$
+        \State $start{\text-}area \gets$ the first OSPF area in the $best{\text-}path$
+        \State $transit{\text-}area \gets$ the second OSPF area in the $best{\text-}path$
+        \For {$r{\text-}int \in best{\text-}path$}
+            \If {$r{\text-}int$ is not the first interface in $best{\text-}path$}
+                \If {$ospf{\text-}area[r{\text-}int]$ is not $transit{\text-}area$ and $r{\text-}int$ and $s{\text-}r{\text-}int$ are not in same router}
+                    \State $next{\text-}area \gets ospf{\text-}area[r{\text-}int]$
+                    \If {$next{\text-}area \neq start{\text-}area$}
+                        \If {($s{\text-}r{\text-}int, transit{\text-}area, r{\text-}int$) $\notin bypassed{\text-}router{\text-}triplets$}
+                            \State add ($s{\text-}r{\text-}int, transit{\text-}area, r{\text-}int$) to $bypassed{\text-}router{\text-}triplets$
+                            \State add ($transit{\text-}area, s{\text-}r{\text-}int$) to $virtual{\text-}link{\text-}setup[r{\text-}int]$
+                            \State add ($transit{\text-}area, r{\text-}int$) to $virtual{\text-}link{\text-}setup[s{\text-}r{\text-}int]$
+                        \EndIf
+                    \EndIf
+                \EndIf
+            \EndIf
+        \EndFor
+    \EndIf
+\EndFor
+\State return $virtual{\text-}link{\text-}setup$
+\end{algorithmic}
+\end{algorithm}
+
+\noindent The algorithm first calculates the shortest path from any area to the backbone in order to identify isolated areas that are not directly connected to the backbone. Once the isolated areas have been identified, the algorithm uses the shortest path from each isolated area to the backbone as a heuristic for later steps. Next, the algorithm finds the shortest path between the ABR that connects the first two OSPF areas and the ABR that connects the last two OSPF areas, with the last OSPF area being the backbone. However, the shortest OSPF area path from an isolated area can only be used as an approximate heuristic because it can only guarantee the existence of the first two and the last two OSPF areas in the shortest router path. Finally, virtual links are established only when both of the following conditions are met, after obtaining the shortest router path:
+\begin{itemize}
+    \item The transit area should not be a backbone area. If an isolated area is connected to a transit area that is a backbone area, then the isolated area will not be qualified as a backbone area as its ABRs can directly perform route summaries from the backbone area. 
+    \item The transit area should be either directly connected to the backbone area, or indirectly connected to the backbone area via another virtual link. 
+\end{itemize}
+
+\noindent If there are isolated areas that are more than one hop away from the backbone area, a sequence of consecutive virtual links needs to be established. If the shortest path from area $c$ to the backbone area passes through areas $b$ and $a$, virtual links need to be set up over transit areas $b$ and $a$, and these virtual links must meet at the ABR between areas $b$ and $a$, as illustrated by Figure \hyperref[f37]{3.7}. Lastly, to save the algorithm from generating extraneous virtual links, each virtual link between ABR $a$ and ABR $b$ over transit area $c$ is generated only once and can be used by other isolated areas to reach the backbone. \\
+
+\label{f37}
+\begin{figure}[H]
+\includegraphics[width=14cm]{con_virtual.pdf}
+\centering
+\caption{Example topology for consecutive virtual link setups}
+\centering
+\end{figure}
+
+\subsubsection{Reducing Number of Virtual Links Used on Topology}
+\noindent Setting up virtual links can be very expensive and resource-intensive. To minimize the number of virtual links configured, three techniques discussed previously are used. First, stochastic node grouping is used to group routers in a node graph and reduce the number of unevenly sized router groups. Second, the center group in the group graph with the most adjacencies is elected as the backbone area, which reduces the distance from any area to the backbone. Finally, because the overall process is stochastic, area assignment and virtual link setup are performed multiple times to obtain the setup with the fewest virtual links\footnote{However, this does not guarantee that this approach is the most optimal, please refer to Chapter \hyperref[c5]{5} for more details.}.
+
+\label{s343}
+\subsection{Configuring EIGRP on Network Routers}
+\noindent Compared to OSPF, the configuration process for EIGRP is much simpler. Only the autonomous system IDs, IP addresses for the subnets, and netmasks for these subnets are needed to set up EIGRP. In our architecture, all routers in the topology are grouped into the same autonomous system since network topologies are expected to be small in size. Subnet IP addresses and netmasks are the same as those used by OSPF. While EIGRP limits the number of options available for customization, it does offer the ability to summarize routes.\\
+
+\subsubsection{Summarizing Routes from Incoming Routing Updates}
+\noindent Broadcasting routes to individual subnets quickly becomes a problem if there are too many subnets in a topology, as it not only increases router memory usage but also consumes considerable bandwidth as the network scales up. In such cases, routes to different subnets can be summarized if both of the following conditions are satisfied: 
+\begin{itemize}
+    \item A common IP prefix exists to match the subnets, and
+    \item All subnets matched by the common IP prefix share the same next hop router interface.
+\end{itemize}
+\noindent To simplify longest prefix matching when packets travel to a router, the shortest IP prefix is selected from all valid IP prefixes. For instance, if a router receives route advertisements for 10.1.1.0/25, 10.1.2.0/25, and 10.1.3.0/25, and all of them share the same next hop router interface, this router may automatically summarize these routes into a single route for 10.1.0.0/16, as this is the smallest IP prefix that can match all three subnets. \\
+
+\noindent In addition, Figure \hyperref[f38]{3.8} and Table \hyperref[t31]{3.1} illustrate that a single route can also be summarized to a route advertised with a smaller prefix. 
+
+\label{f38}
+\begin{figure}[H]
+\includegraphics[width=14cm]{images/example_topo3.pdf}
+\centering
+\caption{Example network topology for route summarization}
+\centering
+\end{figure}
+
+\label{t31}
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{||c|c|||c|c||} 
+ \hline
+ Seq Num & Advertisements \textbf{with} auto-summary & Seq Num & Advertisements \textbf{without} auto-summary\\
+ \hline\hline
+3 & 10.1.2.0/24, 10.1.4.0/24 & 4 & 10.1.2.0/24, 10.1.4.0/24\\
+\hline
+7 & 10.1.1.0/24 & 5 & \textbf{10.1.1.0/25}\\
+\hline
+8 & 10.1.2.0/24, 10.1.4.0/24 & 12 & 10.1.2.0/24, 10.1.4.0/24\\
+\hline
+14 & 10.1.2.0/24 & 13 & 10.1.2.0/24, 10.1.4.0/24\\
+\hline
+16 & 10.1.3.0/24 & 17 & 10.1.3.0/24\\ 
+\hline
+\end{tabular}
+\caption{Example rundown of route update packets from c\_2 to c\_6 captured with Wireshark}
+\end{center}
+\end{table}
+
+\noindent From Figure \hyperref[f38]{3.8}, c\_4 and c\_5 are located within the subnet of 10.1.1.0/25. Without route summarization, routers like c\_1 will broadcast the route for 10.1.1.0/25 to other neighboring routers as it is. However, when the route is summarized, it will be represented by the smallest subnet prefix that doesn't conflict with any other non-related routes. According to Table \hyperref[t31]{3.1}, this route is summarized to 10.1.1.0/24.\\
+
+\noindent While route summarization can minimize the number of routes required to operate a network, it's been hypothesized that summarizing routes in small network topologies would not make much difference. With only a few routes stored in the routing table, performing longest prefix matching from a small number of routes may sometimes be more time-efficient than reducing the number of routes through route summarization.  
+
+\chapter{Evaluating Emulated Networks}
+\label{c4}
+% \noindent In Chapter \hyperref[c2]{2}, we discuss that although many previous works focus on cross-comparing different routing protocols, the metrics that these routing protocols are evaluated on are not clearly defined. This is especially problematic since it poses a huge challenge for future researchers to reproduce test results. This Chapter first defines and discusses three metrics to evaluate on emulated networks: Average packet round trip time, which is contingent to the quality of generated routes. Average network setup time, which correlates to how fast all routers in a topology learn routes. As well as average network convergence time, which correlates to how fast a network recovers from abrupt network changes. Then, we use these metrics to evaluate the architecture we develop from Chapter \hyperref[c3]{3}. Chapter \hyperref[c3]{3} heavily discusses three strategies to configure a network topology. Of the three routing strategies, Section \hyperref[s341]{3.4.1} discusses a method to load routes into routers from the topology information directly sourced from the topology file, while Section \hyperref[s342]{3.4.2} and \hyperref[s343]{3.4.3} describe two methods to configure routing by sourcing topology information from link state gossips and routing information updates. Loading computed routes is only implemented as a sanity check. While OSPF and EIGRP are the actual IGP protocols that network operators use to configure network topologies. In addition, not only loading computed routes does not require any setup on routers, but it also not designed to handle any adjacency changes in a topology. Thus, in this chapter, only OSPF and EIGRP are considered for comparison. \\
+\textcolor{red}{At times it sound like you're evaluating your architecture, but at other times it sounds like you're evaluating the output of your architecture}
+\noindent In Chapter \hyperref[c2]{2}, we discussed how previous works that compare routing protocols often lack clearly defined metrics for evaluation. This poses a significant challenge for future researchers attempting to reproduce test results. In this chapter, we define and discuss three metrics for evaluating emulated networks: average packet round trip time, which is dependent on the quality of generated routes; average network setup time, which correlates to how quickly all routers in a topology learn routes; and average network convergence time, which correlates to how quickly a network recovers from abrupt network changes. We then use these metrics to evaluate the architecture developed in Chapter \hyperref[c3]{3}. \\
+
+\noindent Chapter \hyperref[c3]{3} heavily discusses three strategies for configuring a network topology. Section \hyperref[s341]{3.4.1} describes a method of loading routes into routers directly from topology information sourced from the topology file, while Sections \hyperref[s342]{3.4.2} and \hyperref[s343]{3.4.3} describe two methods of configuring routing by sourcing topology information from link state gossips and routing information updates. Loading computed routes is implemented only as a sanity check. OSPF and EIGRP are the actual IGP protocols that network operators use to configure network topologies. Furthermore, loading computed routes does not require any setup on routers and is not designed to handle any changes in topology adjacency. Therefore, in this chapter, we consider only OSPF and EIGRP for comparison. \textcolor{red}{Sanity check is not related to the main idea of this chapter, consider removing it.} OSPF-All assigns all routers in a topology to the backbone area, while OSPF-Half and OSPF-Quarter allocate at most half and a quarter of the routers in a topology to an OSPF area, respectively. In contrast, EIGRP broadcasts received route advertisement updates as they are, while EIGRP-Auto aggregates received route advertisement updates before broadcasting. \\
+
+\noindent This chapter is structured as follows: using the architecture outlined in Section \hyperref[c34]{3.4} as a basis, we evaluate five variants of OSPF and EIGRP (OSPF-All, OSPF-Half, OSPF-Quarter, EIGRP, and EIGRP-Auto) on three metrics mentioned earlier. These evaluations are performed using GNS3. Finally, we conclude this chapter by analyzing different routing strategies based on empirical test results.
+
+\section{Average Packet Round Trip Time}
+\noindent One objective that network operators optimize is the average packet round-trip time. Specifically, it is defined as the time taken for a packet to travel from any two points on a network topology. One routing strategy may be considered more advantageous if it consistently generates routes that yield shorter aggregated round-trip times for packets. In this section, we first discuss how packet round-trip time is measured. Then we present the empirical data that is tested on our architecture. Finally, we examine the reasons why the empirical data appears the way it does. \\
+
+\noindent To generate the aggregated round trip time for each routing configuration on a network topology, each device aggregates round trip times from all trips to any other device located in the network topology. Table \hyperref[t41]{4.1} shows the average packet travel time for all routing configurations across two topology sizes.\\
+
+\label{t41}
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{|c||c|c|c|c|c|} 
+ \hline
+  & OSPF-All & OSPF-Half & OSPF-Quarter & EIGRP & EIGRP-Auto \\
+ \hline\hline
+10-Router Topology Average & 36.1239 & 36.4062 & \cellcolor{orange!25}37.0114 & \cellcolor{green!25}35.9596 & 36.4176 \\
+\hline
+20-Router Topology Average & \cellcolor{green!25}57.5858 & 58.5810 & \cellcolor{orange!25}59.0949 & 58.0662 & 58.1920 \\
+\hline
+\end{tabular}
+\caption{Average packet travel time (in seconds) across two topology sizes}
+The cell highlighted in green indicates the fastest round trip time,
+while the cell highlighted in orange indicates the slowest round trip time
+\end{center}
+\end{table}
+
+\noindent According to Table \hyperref[t41]{4.1}, it can be observed that OSPF-Quarter performs worse than all other configuration strategies across both topology sizes. Among all variants of the OSPF protocol, packets travel slower, on average, on topologies configured with multiple OSPF areas. This is supported by the OSPF routing protocol as all inter-area packets on a topology have to be routed through the backbone area. If a packet needs to travel from a non-backbone area to another non-backbone area, all routers in a non-backbone area can only reach another area by reaching the ABR that sits on both the non-backbone area and the backbone area \cite{zinin2003alternative}. The same process repeats once the packet leaves the backbone area again for the destination area. Therefore, the routes between peripheral area routers might not always be the most optimal. Figure \hyperref[f41]{4.1} provides an example of suboptimal multi-area OSPF routing.\\
+
+\noindent In Figure \hyperref[f41]{4.1}, the green arrows from the start router to the end router indicate the most optimal path that should be taken. However, since the most optimal path does not go through a backbone area, the ABR on Area A and Area C is not aware of the potential optimal route from the start router in area A to the end router in area C. Thus, the less optimal route through the backbone area marked with red arrows will be used instead. \\
+
+\noindent For both topology sizes, on average, EIGRP generates better routes than EIGRP-Auto. This outcome is contrary to typical expectations. It is expected that summarizing route prefixes will not change the route a packet takes. If that is the case, packets should take slightly longer than usual to perform longest prefix matching against more specific routes when the routes are not summarized. \\
+
+\noindent It can also be observed from Table \hyperref[t41]{4.1} that EIGRP outperforms OSPF-All in 10-router topologies and OSPF outperforms EIGRP in 20-router topologies. One possible reason for this outcome might arise from how routing metrics are calculated in OSPF and EIGRP. While OSPF judges the quality of a route by calculating its cumulative cost, which correlates to the bottleneck bandwidth of the entire route, EIGRP takes a more complicated approach. Equation \hyperref[e41]{4.1} illustrates how, in theory, route metrics are calculated in EIGRP \cite{retana2000eigrp}. \\
+
+\label{f41}
+\begin{figure}[H]
+\includegraphics[width=12cm]{ospf_peripherals.pdf}
+\centering
+\caption{Example of suboptimal multi-area OSPF routing}
+\centering
+\end{figure}
+
+\noindent By default, cisco routers set $K_5 \over K_4 + Reliability$ to be $1$, $K_3$ to be $1$, $K_2$ to be $0$, and $K_1$ to be $1$ \cite{retana2000eigrp}. Thus, the EIGRP metric does not depend on the load and the reliability values on a particular link. Bandwidth$_E$ is calculated by dividing $10^7$ with the actual bandwidth on an interface, while Delay$_E$ is the actual delay on the same interface. Thus, the actual equation used to calculate EIGRP metrics is shown in Equation \hyperref[e42]{4.2} \cite{retana2000eigrp}.
+
+\label{e41}
+\begin{equation}
+[(K_1 \cdot Bandwidth_E + K_2 \cdot {Bandwidth_E \over 256 - Load} + K_3 \cdot Delay_E) \cdot {K_5 \over K_4 + Reliability}] \cdot 256
+\end{equation}
+
+\label{e42}
+\begin{equation}
+[({10^7 \over Bandwidth} + Delay)] \cdot 256
+\end{equation}
+
+\noindent In addition to bandwidth, EIGRP also takes reported delay into account. Therefore, one can hypothesize that given the same optimal link between two points on an interface, if the delay on a link increases, EIGRP will switch to another route completely, while OSPF will not make any routing changes. Thus, it could be argued that EIGRP performs worse than OSPF on larger networks because EIGRP proactively avoids routes that could have high delays but may still be optimal. While a link may have a higher delay at the time of routing information updates, it does not necessarily make the route less optimal because delay times change frequently. Nevertheless, given the limited variety of topology sizes presented in Table \hyperref[t41]{4.1}, it is yet plausible to conclude that EIGRP always generates better routes than OSPF in smaller networks. 
+
+\section{Average Network Setup Time}
+\noindent When all components on a network topology boot up, each router in the network takes some time to populate its routing table. This section explores the average network setup time for all routing configurations across two topology sizes. Specifically, we first discuss how network setup time is defined and measured. Then, we present the empirical data tested on our architecture. Finally, we examine the reasons why the empirical data appears the way it does.\\
+
+\noindent Network setup time is defined as the time it takes for each router to learn routes to all destination subnets in a network topology. It is worth noting that OSPF and EIGRP belong to different families of routing protocols, and the network setup time is measured differently for these two routing protocols.
+\begin{itemize}
+    \item OSPF: Setup time is measured by taking the maximum time for two routers on a link to establish \textbf{FULL} adjacency state. 
+    \item EIGRP: Setup time is measured by taking the maximum time for a router on a link to discover its neighbor.
+\end{itemize}
+\noindent It is also important to note that the routes generated immediately after the setup time is not necessarily the most optimal. For both routing strategies, it is only ensured that there will be a route between any two points on a network topology. Although the link-state database tables across all routers within the same area will be synchronized on OSPF-configured topologies, routers configured with EIGRP will continue to send incremental routing information updates to their neighbors even after neighbor relationships are established. \\
+
+\label{t42}
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{|c||c|c|c|c|c|} 
+ \hline
+  & OSPF-All & OSPF-Half & OSPF-Quarter & EIGRP & EIGRP-Auto \\
+ \hline\hline
+10-Router Topology Average & 47.2886 & 48.055 & \cellcolor{orange!25}56.9982 & \cellcolor{green!25}4.395 & 4.6014 \\
+\hline
+20-Router Topology Average & 51.6806 & 52.2342 & \cellcolor{orange!25}62.1662 & \cellcolor{green!25}8.0294 & 8.5966 \\
+\hline
+\end{tabular}
+\caption{Average network setup time (in seconds) across two topology sizes}
+The cell highlighted in green indicates the fastest network setup time, while the cell highlighted in orange
+indicates the slowest network setup time
+\end{center}
+\end{table}
+
+\noindent Table \hyperref[t42]{4.2} displays the average network setup time for all routing configurations across two topology sizes. As with the data in Table \hyperref[t41]{4.1}, EIGRP sets up faster than EIGRP-Auto. \textcolor{red}{Remind readers what EIGRP-Auto is}. This is due to the computational overhead created by route summarization, which can hinder routers' ability to process EIGRP packets received from other routers. \\
+
+\noindent Interestingly, Table \hyperref[t42]{4.2} shows that OSPF configuration takes longer to set up than all EIGRP configurations. This is because OSPF requires all routers within an OSPF area to have a complete and synchronized link state database before it can finish setup, while EIGRP can settle with neighbor-level routing updates. OSPF takes a more holistic approach by multicasting link state packets to all other routers within an area to learn about all links advertised by all routers. Among the three ways to configure OSPF, a similar tendency is observed where the smaller the OSPF area is, the longer it takes the network topology to fully set up. While fewer link state gossips will happen in smaller OSPF areas, maintaining the overall connectivity of the entire network topology is more time-consuming since the ABRs on a peripheral area and a backbone area need to aggregate summarized routes so that packets coming from both areas can be redirected. Figure \hyperref[f42]{4.2} illustrates how summarized routes are aggregated in an ABR.\\
+
+\label{f42}
+\begin{figure}[H]
+\includegraphics[width=16cm]{ABR_sum.pdf}
+\centering
+\caption{Example of route summarization with ABRs}
+\centering
+\end{figure}
+
+\label{f43}
+\begin{figure}[H]
+\includegraphics[width=16cm]{ABR_state_diagram.pdf}
+\centering
+\caption{Link traffic in Multi-Area OSPF vs Single-Area OSPF}
+\centering
+\end{figure}
+
+\noindent Figure \hyperref[f42]{4.2} shows that when routers are first establishing their OSPF area, they inform their neighboring routers of their knowledge. The Type 1 LSAs used within the OSPF area are distributed upon request and contain information about link interfaces and advertising interface pairs. Once a router receives LSAs from other routers, ABRs generate summarized LSAs based on the information stored in their link state databases and send out Type 3 LSAs, which are used to communicate between OSPF areas. These Type 3 LSAs, along with Type 1 LSAs within an OSPF area, are flooded to other parts of the topology so that routers can navigate across different OSPF areas. Flooding Type 3 LSAs to all routers in a topology can cause delays. Additionally, Figure \hyperref[f43]{4.3} shows the traffic on a link after neighbor relationships have been established in two different scenarios. The figure demonstrates that routers configured with Multi-Area OSPF send out packets that are larger in size compared to those in Single-Area OSPF. Additionally, more back-and-forth travel is required for Multi-Area OSPF routers to synchronize their link state databases, which can lead to longer delays.  
+
+\section{Average Network Convergence Time}
+\noindent The physical components of networks can fail due to various factors, such as wear and tear or incorrect configuration setups. While network topology emulators are not susceptible to these physical factors, they are still vulnerable to abrupt changes in the emulated network topology. Users can initiate link and node shutdowns at any time, leading to disruptions in the network. As a result, it is crucial to investigate how quickly a network can recover and converge after experiencing an abrupt change in topology. In this section, we will first discuss our measurement of network convergence time. Then, we will present the empirical data tested using our own architecture. Finally, we will explain the technicalities of why the empirical data appears the way it does. \\
+
+\noindent As mentioned in Chapter \hyperref[c2]{2}, the measurement of network convergence time is often poorly defined. In this chapter, the method of measuring network convergence time is contingent upon the configuration of the network. For networks configured with OSPF, the network convergence time is taken from the time two routers on a link first exchange their link state database information to the last time a router acknowledges the link state update by the other router. For EIGRP-configured networks, the network convergence time is taken from the first time a router sends a query to the other router to the last time a router updates the other route of the route change. \\ 
+
+\noindent In this experiment, links are randomly removed from both the 10-router and 20-router networks. For each network topology type, 20\% of the router-to-router links are selected and then removed from the topology. To ensure a thorough analysis, each network and routing configuration is tested 20 times, which gave each router-to-router link a probability of over 98.8\% to be removed at least once\footnote{The probability of not getting selected at all is ${1 \over 5}^{20} = 1.153\%$}. Table \hyperref[t43]{4.3} provides a detailed summary of the average network convergence time for all routing configurations across both topology sizes.\\
+
+\label{t43}
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{|c||c|c|c|c|c|} 
+ \hline
+  & OSPF-All & OSPF-Half & OSPF-Quarter & EIGRP & EIGRP-Auto \\
+ \hline\hline
+10-Router Topology Average & 15.0792 & 18.9672 & \cellcolor{orange!25}24.064 & 7.21 & \cellcolor{green!25}7.2052 \\
+\hline
+20-Router Topology Average & 18.5706 & 22.4829 & \cellcolor{orange!25}27.9311 & \cellcolor{green!25}14.0161 & 14.7164 \\
+\hline
+\end{tabular}
+\caption{Average network convergence time (in seconds) across two topology sizes}
+The cell highlighted in green indicates the fastest network convergence time, while the cell highlighted in orange
+indicates the slowest network convergence time
+\end{center}
+\end{table}
+
+\noindent Overall, a similar trend is observed in Table \hyperref[t43]{4.3}. However, unlike the previous section, EIGRP-Auto rebounds slightly faster in smaller networks, whereas EIGRP rebounds much more quickly in larger networks. This observation can be attributed to the fact that routers configured with EIGRP do not always need to look for new routes in case of abrupt network topology changes. Table \hyperref[t44]{4.4} presents an example of an EIGRP routing topology table.\\
+
+\label{t44}
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+ \hline
+  State & Destination & FD & Successor Interfaces\\
+ \hline\hline
+ Passive & 10.1.9.0/25 & 286720 & 10.1.14.2 (307200/281600), \textcolor{red}{10.1.16.3 (309760/307200)}\\
+ \hline
+ Passive & 10.1.8.0/25 & 289280 & 10.1.16.3 (289280/286720), 10.1.14.2 (312320/286720)\\
+ \hline
+ Passive & 10.1.2.0/25 & 284160 & 10.1.16.3 (289280/286720), 10.1.14.2 (312320/286720)\\
+ \hline
+ Passive & 10.1.16.0/24 & 28160 & Directly Connected\\
+ \hline
+\end{tabular}
+\caption{Example of an abridged EIGRP routing topology table}
+\end{center}
+\end{table}
+
+\noindent As shown in Table \hyperref[t44]{4.4}, this router has multiple successor interfaces for each individual destination subnet. According to the EIGRP protocol, if one of the routes to a destination subnet fails, the route will remain in the passive state as long as the other successor routes meet the feasibility condition. Otherwise, the state of the route will be changed to an active state, and the router will query its neighboring routers for an updated route to the same destination subnet. If the link to 10.1.14.2 becomes inactive for the route to 10.1.9.0/25, a new round of route information queries will be initiated since the reported distance to 10.1.16.3 is 307200, which already exceeds the feasible distance allowed for the route. Thus, the feasibility condition is not met. \\
+
+\noindent Statistically, there should be a higher number of feasible backup routes in larger network topologies, giving EIGRP a significant advantage over EIGRP-Auto, as EIGRP has more routes to choose from due to the absence of route summarization. However, in smaller networks, this advantage may not be apparent, as both EIGRP and EIGRP-Auto are likely to query new routing information when a link goes down. Additionally, route summarization reduces the number of destination subnets that a router needs to query routes for. Therefore, it can be argued that in smaller network topologies, EIGRP-Auto converges slightly faster than EIGRP.
+
+\section{Analysis of Routing Strategies}
+\noindent To conclude this chapter, we can say that the distance-vector foundation\footnote{EIGRP is commonly considered a hybrid routing protocol because, in addition to being a distance-vector routing protocol, it also has a topology table that holds information about feasible and successor routes.} of EIGRP makes it a more robust routing protocol suitable for network synthesis. Furthermore, disabling route summarization for EIGRP-configured routers can improve the network's performance by reducing computational overhead and increasing the number of backup routes available in the event of network failures. However, the complex route metric calculation process of EIGRP makes it less desirable for optimizing traffic speed as the network grows. Regarding OSPF-related routing strategies, we conclude that dividing a network into different OSPF areas is generally not recommended as inter-area traffic can negatively affect network performance and resilience.\\
+
+
+\chapter{Limitations and Future Works}
+\label{c5}
+\noindent In this chapter, we assess the design limitations of the work presented in this thesis and propose future research directions to address these limitations. Specifically, we focus on three key areas that could have been improved: the algorithms used to synthesize each routing strategy in the synthesis architecture, the testing of network topologies to assess the functionality and performance of the synthesis architecture, and the visualization tools that aid network operators in examining critical network traffic data from the emulated networks. For each key area, we propose concrete ideas on how to make improvements.
+
+\section{Synthesizing Networks}
+\textcolor{red}{Consider splitting this section into multiple sections.}
+\noindent Section \hyperref[s342]{3.4.2} describes three methods used to minimize the number of virtual links installed in the network. To recap, these methods are used in combination with multiple retries to reduce the usage of virtual links in a topology. This approach belongs to a class of Monte Carlo methods that has yet to be formally defined in this thesis. It may be beneficial for future researchers to develop a probability function that generates the likelihood of virtual link generation using the network topology and area assignment as inputs. However, Monte Carlo sampling is not perfect as it does not guarantee optimal network configuration and can be computationally expensive. A more feasible research direction for reducing downstream problems in OSPF-configured networks is to improve the assignment of areas to the network topology. This problem can be generalized as the construction of a contiguous graph of subgraphs, such that there exists a subgraph with a distance of 1 to all other subgraphs. If this objective cannot be achieved, users should be notified of this limitation.\\
+
+\noindent Chapter \hyperref[c3]{3} focuses on examining OSPF and EIGRP individually, while Chapter \hyperref[c4]{4} tests these routing strategies separately. In theory, network topologies can be divided into multiple clusters, allowing for concurrent configuration of OSPF and EIGRP. Decreasing the size of OSPF areas without sacrificing computational resources for communication with external areas has the potential to improve network configuration. Similar to how existing works often combine OSPF and BGP for both intra-AS and inter-AS traffic routing, future research can explore ways to optimize network delays and resilience by using a mix-and-match approach to routing strategies on different router network interfaces in a network. \\
+
+\noindent Section \hyperref[s343]{3.4.3} primarily discusses the configuration of EIGRP, specifically how users can enable or disable automatic route summarization on all routers. However, the EIGRP routing metric function contains multiple parameters that users can customize. The thesis uses the default parameter setup shown in Equation \hyperref[e42]{4.2}; however, this equation may not be the most optimal. The default setup places significant emphasis on reported link delay, while ignoring crucial metrics such as network load. Therefore, it could be beneficial for the research community to discover a more optimal parameter setup for EIGRP that maximizes routing efficiency in smaller network topologies. \\
+
+\noindent Finally, firewalls are fundamental network components that are not explored in the topologies used in this thesis. Firewalls are used to physically block LSAs and routing updates as network operators deem necessary. The inclusion of firewalls in a network topology will significantly alter how routing graphs are constructed and how each router calculates routes to other parts of the topology. Thus, future research could explore ways to mix-and-match routing strategies and modify routing graphs to further optimize key network objectives.
+
+\section{Testing Routing Strategies}
+\noindent Chapter \hyperref[c4]{4} discusses tests that evaluate OSPF and EIGRP related routing strategies. However, there are some areas where improvements can be made. Firstly, using a more varied topology testing dataset would provide researchers with a broader overview of how each routing strategy performs against others in complex and demanding situations. It would be tremendously beneficial for the research community to collect a more varied set of network topologies that network operators use in the industry. \\
+
+\noindent Secondly, to achieve more granularity in testing OSPF topologies, the network topology can be divided into smaller area sizes. In this thesis, the networks configured with OSPF were divided into areas with sizes that do not exceed half or a quarter of all the routers in the topology, providing only a rough trend on how different area sizes affect performance. To make this approach more scientific, future research may focus on deriving a scientific equation from a set of more granular empirical data on how OSPF area sizes affect overall key network metrics.\\
+
+\noindent Thirdly, network convergence time should be explored in greater depth. This thesis only covers cases where links are randomly removed, but more complex situations may arise \cite{10.1145/2639988.2655736}. For example, links and routers may be inactive for an extended period before becoming active again. There may also be instances where a link goes down temporarily and becomes active before all routers in a topology agree on the routes without the presence of that link. \\
+
+\noindent Finally, there is a need to stress test emulated networks since real-world networks are rarely ideal. In this thesis, the testing conditions are more benign since packets are uniformly small in size, and cumulative bandwidth can reach as fast as 10 Mbps. Future research can focus on more extreme measures such as bandwidth throttling to be tested on emulated networks to determine how these routing strategies handle more challenging adverse network conditions. 
+
+\section{Visualizing Network Information}
+\noindent To assist network operators in emulating networks prior to deployment, it's crucial to offer them a straightforward and user-friendly method for visualizing network performance. One way to accomplish this is by presenting important traffic, metrics, and configuration data in a visual format, which helps to evaluate the emulated network. \\
+
+\noindent Specifically, there is considerable scope for future research aimed at visualizing key network information for network operators. To begin with, modern network emulators such as GNS3 offer not only GUIs, but also network emulator APIs that enable network operators to monitor individual network devices and post console commands. As network devices transmit numerous packets to other devices in a topology, bandwidth usage increases with the scale of the emulated network. Consequently, there is a pressing need to develop a distributed data monitoring tool that ensures both data consistency and availability. However, guaranteeing these metrics ultimately affects partition tolerance, according to the CAP theorem. Therefore, the monitoring tool must also be equipped to handle situations where device information piped from the API is dropped or lost. \\
+
+\noindent To enable more holistic evaluation of network performance, an asynchronous scheduled testing service should run at predefined intervals to ensure reliable emulation of networks. An additional asynchronous service should run in parallel with the testing service to aggregate existing network data prior to delivering it to the user. Finally, a dashboard may be developed that incorporates all the aforementioned steps by retrieving critical network data from the database. The dashboard should highlight any failed scheduled tests and provide users with a backtrace to the violating database entry. It should also retrieve key network metrics such as network delays and visualize current configuration information, such as OSPF area assignment, in a clear and concise manner that network operators can comprehend. Such future work would undoubtedly help network operators gain valuable insights into network performance and inform more effective decision-making, ultimately contributing to the success of network deployments.
+
+\chapter{Conclusion}
+\label{c6}
+
+\noindent Automating network configuration with minimal operator intervention not only boosts productivity but also prevents grave configuration mistakes before deployment. Previous research formulates this problem as a complex satisfiability problem and focused on solving hard-to-crack specification-compliant solutions more efficiently. However, in Chapter \hyperref[c2]{2}, we argue that not every use case requires excessive network specifications as an input. Moreover, previous research efforts lack focus on how networks are constructed on network emulators, the diversity of routing protocols used, or how test metrics are obtained.\\
+
+\noindent In Chapter \hyperref[c3]{3}, we address these issues by describing how networks are constructed and how three different routing strategies are implemented in our architecture. In Chapter \hyperref[c4]{4}, we define how different key metrics are computed for networks configured with different routing strategies, and we use these metrics to determine which routing strategy is suitable for each individual scenario. However, we recognize in Chapter \hyperref[c5]{5} that the work presented in this thesis still has considerable room for improvement. We need better algorithms to improve OSPF area assignments, incorporate mixed routing strategy configurations, and provide better customizability in EIGRP metrics calculation. Additionally, we need to test more diverse and varied testing conditions on the current architecture. Finally, the architecture should visualize vital network information from high-frequency network traffic. In summary, the contributions of this thesis are as follows:
+
+\begin{itemize}
+    \item We develop an architecture to configure a network that supports three routing strategies --- pre-computed route generation and loading, OSPF with different area assignments, and EIGRP with the option of disabling auto route summarization. \textcolor{red}{Confusing wording, does the architecture have these properties or the resulting network?}
+    \item We have implemented algorithms that perform automatic IP address assignment on network devices, assign OSPF areas to network topologies, and configure virtual links on OSPF-configured networks. 
+    \item We define how round trip time of packets, network setup time, and network convergence are computed.
+    \item We cross-compare and analyze different specification options on round trip time of packets, network setup time, and network convergence time after sudden network changes.  
+\end{itemize}
+
+\noindent In conclusion, we believe that the work presented in this thesis serves the networking community by streamlining network configuration synthesis.\\
+
+
+
+% per Graduate College preference, place the \appendix and the appendices content before the
+% bibliography (here) only if the appendices contain references.
+
+\backmatter
+
+\printbibliography
+% the below lines are only needed if bibliography precedes appendices
+% uses https://tex.stackexchange.com/a/440212 to continue page numbering
+% \clearpage
+% \setcounter{counterforappendices}{\value{page}}
+% \mainmatter
+% \setcounter{page}{\value{counterforappendices}}
+
+% \input{Appendix.tex}
+
+\end{document}

@@ -1,0 +1,232 @@
+% For copyright and license information, see uiucthesis2021.dtx and derivatives.
+@misc{beurerkellner2022learning,
+      title={Learning to Configure Computer Networks with Neural Algorithmic Reasoning}, 
+      author={Luca Beurer-Kellner and Martin Vechev and Laurent Vanbever and Petar Veličković},
+      year={2022},
+      eprint={2211.01980},
+      archivePrefix={arXiv},
+      primaryClass={cs.NI}
+}
+
+@inproceedings{10.1145/3405671.3405816, author = {Bahnasy, Mahmoud and Li, Fenglin and Xiao, Shihan and Cheng, Xiangle}, title = {DeepBGP: A Machine Learning Approach for BGP Configuration Synthesis}, year = {2020}, isbn = {9781450380430}, publisher = {Association for Computing Machinery}, address = {New York, NY, USA}, url = {https://doi.org/10.1145/3405671.3405816}, doi = {10.1145/3405671.3405816}, abstract = {Border Gateway Protocol (BGP) is the standard inter-domain routing protocol that is used to exchange reachability information among Wide Area Networks (WANs). BGP is a policy-based routing protocol that introduces a lot of flexibility. However, this flexibility increases the configuration complexity.In this research, we introduce DeepBGP as a neural network-based system that synthesizes network configuration given a high-level operator intent. We adopt Graph Neural Network (GNN) to represent network topology and generate partial network configuration. A validation unit is then used to calculate a reward based on which an Evolution Strategies (ES) optimizer updates neural network parameters. Since ES does not require backpropagation, they provide a significant reduction in calculation time. Further, the recent advances in deep learning with strong hardware acceleration and the parallelization capabilities offered by ES provide great potential in scaling the proposed solution to larger topologies.We demonstrate experimentally that DeepBGP can generate a network-wide configuration for both Huawei and Cisco devices while fulfilling operator requirements. We also show how Deep-BGP scales when the network size increases, and how hardware acceleration could improve the scalability of the system.}, booktitle = {Proceedings of the Workshop on Network Meets AI & ML}, pages = {48–55}, numpages = {8}, keywords = {BGP synthesis, Machine learning, Network configuration, Deep reinforcement learning, Evolution strategies}, location = {Virtual Event, USA}, series = {NetAI '20} }
+
+@misc{elhassany2017networkwide,
+      title={Network-wide Configuration Synthesis}, 
+      author={Ahmed El-Hassany and Petar Tsankov and Laurent Vanbever and Martin Vechev},
+      year={2017},
+      eprint={1611.02537},
+      archivePrefix={arXiv},
+      primaryClass={cs.NI}
+}
+
+@article{10.1145/3179425, author = {Subramanian, Kausik and D'Antoni, Loris and Akella, Aditya}, title = {Synthesis of Fault-Tolerant Distributed Router Configurations}, year = {2018}, issue_date = {March 2018}, publisher = {Association for Computing Machinery}, address = {New York, NY, USA}, volume = {2}, number = {1}, url = {https://doi.org/10.1145/3179425}, doi = {10.1145/3179425}, abstract = {Operators of modern networks require support for diverse and complex end-to-end policies, such as, middlebox traversals, isolation, and traffic engineering. While Software-defined Networking (SDN) provides centralized custom routing functionality in networks to realize these policies, many networks still deploy "legacy" control planes running distributed routing protocols like OSPF and BGP because these protocols are scalable and robust to failures. However, realization of policies by distributed control plane configurations is manual and error-prone. We present Zeppelin, a system for automatically generating policy-compliant control planes that also behave well under majority of small network failures. Zeppelin differs from existing approaches in that it uses policy-compliant paths to guide the synthesis process instead of directly generating policy-compliant configurations. We show that Zeppelin synthesizes highly resilient and policy-compliant configurations for real topologies with up to 80 routers.}, journal = {Proc. ACM Meas. Anal. Comput. Syst.}, month = {apr}, articleno = {22}, numpages = {26}, keywords = {fault tolerance, routing protocols, zeppelin; synthesis, hierarchical network control plane, network management} }
+
+@inproceedings{10.1145/3062341.3062367, author = {Beckett, Ryan and Mahajan, Ratul and Millstein, Todd and Padhye, Jitendra and Walker, David}, title = {Network Configuration Synthesis with Abstract Topologies}, year = {2017}, isbn = {9781450349888}, publisher = {Association for Computing Machinery}, address = {New York, NY, USA}, url = {https://doi.org/10.1145/3062341.3062367}, doi = {10.1145/3062341.3062367}, abstract = {We develop Propane/AT, a system to synthesize provably-correct BGP (border gateway protocol) configurations for large, evolving networks from high-level specifications of topology, routing policy, and fault-tolerance requirements. Propane/AT is based on new abstractions for capturing parameterized network topologies and their evolution, and algorithms to analyze the impact of topology and routing policy on fault tolerance. Our algorithms operate entirely on abstract topologies. We prove that the properties established by our analyses hold for every concrete instantiation of the given abstract topology. Propane/AT also guarantees that only incremental changes to existing device configurations are required when the network evolves to add or remove devices and links. Our experiments with real-world topologies and policies show that our abstractions and algorithms are effective, and that, for large networks, Propane/AT synthesizes configurations two orders of magnitude faster than systems that operate on concrete topologies.}, booktitle = {Proceedings of the 38th ACM SIGPLAN Conference on Programming Language Design and Implementation}, pages = {437–451}, numpages = {15}, keywords = {Compilation, Propane/AT, BGP, Fault Tolerance, Network Management, Domain-specific Language}, location = {Barcelona, Spain}, series = {PLDI 2017} }
+ 
+ 
+@article{10.1145/3140587.3062367, author = {Beckett, Ryan and Mahajan, Ratul and Millstein, Todd and Padhye, Jitendra and Walker, David}, title = {Network Configuration Synthesis with Abstract Topologies}, year = {2017}, issue_date = {June 2017}, publisher = {Association for Computing Machinery}, address = {New York, NY, USA}, volume = {52}, number = {6}, issn = {0362-1340}, url = {https://doi.org/10.1145/3140587.3062367}, doi = {10.1145/3140587.3062367}, abstract = {We develop Propane/AT, a system to synthesize provably-correct BGP (border gateway protocol) configurations for large, evolving networks from high-level specifications of topology, routing policy, and fault-tolerance requirements. Propane/AT is based on new abstractions for capturing parameterized network topologies and their evolution, and algorithms to analyze the impact of topology and routing policy on fault tolerance. Our algorithms operate entirely on abstract topologies. We prove that the properties established by our analyses hold for every concrete instantiation of the given abstract topology. Propane/AT also guarantees that only incremental changes to existing device configurations are required when the network evolves to add or remove devices and links. Our experiments with real-world topologies and policies show that our abstractions and algorithms are effective, and that, for large networks, Propane/AT synthesizes configurations two orders of magnitude faster than systems that operate on concrete topologies.}, journal = {SIGPLAN Not.}, month = {jun}, pages = {437–451}, numpages = {15}, keywords = {Propane/AT, Domain-specific Language, BGP, Fault Tolerance, Network Management, Compilation} }
+
+@inproceedings{10.5555/3307441.3307491, author = {El-Hassany, Ahmed and Tsankov, Petar and Vanbever, Laurent and Vechev, Martin}, title = {Netcomplete: Practical Network-Wide Configuration Synthesis with Autocompletion}, year = {2018}, isbn = {9781931971430}, publisher = {USENIX Association}, address = {USA}, abstract = {Network operators often need to adapt the configuration of a network in order to comply with changing routing policies. Evolving existing configurations, however, is a complex task as local changes can have unforeseen global effects. Not surprisingly, this often leads to mistakes that result in network downtimes.We present NetComplete, a system that assists operators in modifying existing network-wide configurations to comply with new routing policies. NetComplete takes as input configurations with "holes" that identify the parameters to be completed and "autocompletes" these with concrete values. The use of a partial configuration addresses two important challenges inherent to existing synthesis solutions: (i) it allows the operators to precisely control how configurations should be changed; and (ii) it allows the synthesizer to leverage the existing configurations to gain performance. To scale, NetComplete relies on powerful techniques such as counter-example guided inductive synthesis (for link-state protocols) and partial evaluation (for path-vector protocols).We implemented NetComplete and showed that it can autocomplete configurations using static routes, OSPF, and BGP. Our implementation also scales to realistic networks and complex routing policies. Among others, it is able to synthesize configurations for networks with up to 200 routers within few minutes.}, booktitle = {Proceedings of the 15th USENIX Conference on Networked Systems Design and Implementation}, pages = {579–594}, numpages = {16}, location = {Renton, WA, USA}, series = {NSDI'18} }
+
+@INPROCEEDINGS{9940325,
+  author={Schneider, Tibor and Schmid, Roland and Vanbever, Laurent},
+  booktitle={2022 IEEE 30th International Conference on Network Protocols (ICNP)}, 
+  title={On the Complexity of Network-Wide Configuration Synthesis}, 
+  year={2022},
+  volume={},
+  number={},
+  pages={1-11},
+  doi={10.1109/ICNP55882.2022.9940325}}
+
+@inproceedings{10.1145/3098822.3098834, author = {Beckett, Ryan and Gupta, Aarti and Mahajan, Ratul and Walker, David}, title = {A General Approach to Network Configuration Verification}, year = {2017}, isbn = {9781450346535}, publisher = {Association for Computing Machinery}, address = {New York, NY, USA}, url = {https://doi.org/10.1145/3098822.3098834}, doi = {10.1145/3098822.3098834}, abstract = {We present Minesweeper, a tool to verify that a network satisfies a wide range of intended properties such as reachability or isolation among nodes, waypointing, black holes, bounded path length, load-balancing, functional equivalence of two routers, and fault-tolerance. Minesweeper translates network configuration files into a logical formula that captures the stable states to which the network forwarding will converge as a result of interactions between routing protocols such as OSPF, BGP and static routes. It then combines the formula with constraints that describe the intended property. If the combined formula is satisfiable, there exists a stable state of the network in which the property does not hold. Otherwise, no stable state (if any) violates the property. We used Minesweeper to check four properties of 152 real networks from a large cloud provider. We found 120 violations, some of which are potentially serious security vulnerabilities. We also evaluated Minesweeper on synthetic benchmarks, and found that it can verify rich properties for networks with hundreds of routers in under five minutes. This performance is due to a suite of model-slicing and hoisting optimizations that we developed, which reduce runtime by over 460x for large networks.}, booktitle = {Proceedings of the Conference of the ACM Special Interest Group on Data Communication}, pages = {155–168}, numpages = {14}, keywords = {Network verification, Control plane analysis}, location = {Los Angeles, CA, USA}, series = {SIGCOMM '17} }
+
+@inproceedings{10.5555/2789770.2789803, author = {Fogel, Ari and Fung, Stanley and Pedrosa, Luis and Walraed-Sullivan, Meg and Govindan, Ramesh and Mahajan, Ratul and Millstein, Todd}, title = {A General Approach to Network Configuration Analysis}, year = {2015}, isbn = {9781931971218}, publisher = {USENIX Association}, address = {USA}, abstract = {We present an approach to detect network configuration errors, which combines the benefits of two prior approaches. Like prior techniques that analyze configuration files, our approach can find errors proactively, before the configuration is applied, and answer "what if" questions. Like prior techniques that analyze data-plane snapshots, our approach can check a broad range of forwarding properties and produce actual packets that violate checked properties. We accomplish this combination by faithfully deriving and then analyzing the data plane that would emerge from the configuration. Our derivation of the data plane is fully declarative, employing a set of logical relations that represent the control plane, the data plane, and their relationship. Operators can query these relations to understand identified errors and their provenance. We use our approach to analyze two large university networks with qualitatively different routing designs and find many misconfigurations in each. Operators have confirmed the majority of these as errors and have fixed their configurations accordingly.}, booktitle = {Proceedings of the 12th USENIX Conference on Networked Systems Design and Implementation}, pages = {469–483}, numpages = {15}, location = {Oakland, CA}, series = {NSDI'15} }
+
+@INPROCEEDINGS{7399308,
+  author={Dey, Golap Kanti and Ahmed, Md. Mobasher and Ahmmed, Kazi Tanvir},
+  booktitle={2015 International Conference on Computer and Information Engineering (ICCIE)}, 
+  title={Performance analysis and redistribution among RIPv2, EIGRP & OSPF Routing Protocol}, 
+  year={2015},
+  volume={},
+  number={},
+  pages={21-24},
+  doi={10.1109/CCIE.2015.7399308}}
+
+@INPROCEEDINGS{6636217,
+  author={Fiţigău, Ioan and Toderean, Gavril},
+  booktitle={Proceedings of the International Conference on ELECTRONICS, COMPUTERS and ARTIFICIAL INTELLIGENCE - ECAI-2013}, 
+  title={Network performance evaluation for RIP, OSPF and EIGRP routing protocols}, 
+  year={2013},
+  volume={},
+  number={},
+  pages={1-4},
+  doi={10.1109/ECAI.2013.6636217}}
+
+@article{mmh,
+	author = {Mohamad A. Yehia and Mohammed S. Aziz and Hussein A. Elsayed},
+	title = {Article: Analysis of IGP Routing Protocols for Real Time Applications: A Comparative Study},
+	journal = {International Journal of Computer Applications},
+	year = {2011},
+	volume = {26},
+	number = {3},
+	pages = {11-17},
+	month = {July},
+	note = {Full text available}
+}
+
+@article{10.1145/1070873.1070877, author = {Francois, Pierre and Filsfils, Clarence and Evans, John and Bonaventure, Olivier}, title = {Achieving Sub-Second IGP Convergence in Large IP Networks}, year = {2005}, issue_date = {July 2005}, publisher = {Association for Computing Machinery}, address = {New York, NY, USA}, volume = {35}, number = {3}, issn = {0146-4833}, url = {https://doi.org/10.1145/1070873.1070877}, doi = {10.1145/1070873.1070877}, abstract = {We describe and analyse in details the various factors that influence the convergence time of intradomain link state routing protocols. This convergence time reflects the time required by a network to react to the failure of a link or a router. To characterise the convergence process, we first use detailed measurements to determine the time required to perform the various operations of a link state protocol on currently deployed routers. We then build a simulation model based on those measurements and use it to study the convergence time in large networks. Our measurements and simulations indicate that sub-second link-state IGP convergence can be easily met on an ISP network without any compromise on stability.}, journal = {SIGCOMM Comput. Commun. Rev.}, month = {jul}, pages = {35–44}, numpages = {10}, keywords = {IS-IS, OSPF, convergence time, intradomain routing} }
+
+@INPROCEEDINGS{1494939,
+  author={Galli, S. and Luss, H. and Sucec, J. and McAuley, A. and Samtani, S. and Dubois, D. and DeTerra, K. and Stewart, R. and Kelley, B.},
+  booktitle={IEEE International Conference on Communications, 2005. ICC 2005. 2005}, 
+  title={A novel approach to OSPF-area design for large wireless ad-hoc networks}, 
+  year={2005},
+  volume={5},
+  number={},
+  pages={2986-2992 Vol. 5},
+  doi={10.1109/ICC.2005.1494939}}
+
+@ARTICLE{121955,
+  author={Perlman, R.},
+  journal={IEEE Network}, 
+  title={A comparison between two routing protocols: OSPF and IS-IS}, 
+  year={1991},
+  volume={5},
+  number={5},
+  pages={18-24},
+  doi={10.1109/65.121955}}
+
+@techreport{moy1997ospf,
+  title={OSPF version 2},
+  author={Moy, John},
+  year={1997}
+}
+
+@article{eigrp,
+author = {Albrightson, Bob and Garcia-Luna-Aceves, J.J. and Boyle, Joanne},
+year = {1998},
+month = {06},
+pages = {},
+title = {Eigrp - A Fast Routing Protocol Based On Distance Vectors}
+}
+
+@inproceedings{mininet, author = {Lantz, Bob and Heller, Brandon and McKeown, Nick}, title = {A Network in a Laptop: Rapid Prototyping for Software-Defined Networks}, year = {2010}, isbn = {9781450304092}, publisher = {Association for Computing Machinery}, address = {New York, NY, USA}, url = {https://doi.org/10.1145/1868447.1868466}, doi = {10.1145/1868447.1868466}, abstract = {Mininet is a system for rapidly prototyping large networks on the constrained resources of a single laptop. The lightweight approach of using OS-level virtualization features, including processes and network namespaces, allows it to scale to hundreds of nodes. Experiences with our initial implementation suggest that the ability to run, poke, and debug in real time represents a qualitative change in workflow. We share supporting case studies culled from over 100 users, at 18 institutions, who have developed Software-Defined Networks (SDN). Ultimately, we think the greatest value of Mininet will be supporting collaborative network research, by enabling self-contained SDN prototypes which anyone with a PC can download, run, evaluate, explore, tweak, and build upon.}, booktitle = {Proceedings of the 9th ACM SIGCOMM Workshop on Hot Topics in Networks}, articleno = {19}, numpages = {6}, keywords = {software defined networking, rapid prototyping, virtualization, open-flow, emulation}, location = {Monterey, California}, series = {Hotnets-IX} }
+
+@INPROCEEDINGS{7250212,
+  author={Emiliano, Rodrigo and Antunes, Mário},
+  booktitle={2015 10th International Conference on Computer Science & Education (ICCSE)}, 
+  title={Automatic network configuration in virtualized environment using GNS3}, 
+  year={2015},
+  volume={},
+  number={},
+  pages={25-30},
+  doi={10.1109/ICCSE.2015.7250212}}
+
+@INPROCEEDINGS{6554134,
+  author={Liangxu Sun and Jiansheng Wu and Yujun Zhang and Hang Yin},
+  booktitle={2013 8th International Conference on Computer Science & Education}, 
+  title={Comparison between physical devices and simulator software for Cisco network technology teaching}, 
+  year={2013},
+  volume={},
+  number={},
+  pages={1357-1360},
+  doi={10.1109/ICCSE.2013.6554134}}
+
+@article{tsegaye2012ospf,
+  title={Ospf convergence times},
+  author={Tsegaye, Yonas and Geberehana, Tewodros},
+  journal={Master of Science Thesis, Dep. Computer Science and Engineering, Chalmers University of Technology},
+  year={2012},
+  publisher={Citeseer}
+}
+
+@article{okonkwo2020comparative,
+  title={Comparative study of EIGRP and OSPF protocols based on network convergence},
+  author={Okonkwo, Ifeanyi Joseph and Emmanuel, Ikiomoye Douglas and others},
+  journal={International Journal of Advanced Computer Science and Applications},
+  volume={11},
+  number={6},
+  pages={39--45},
+  year={2020},
+  publisher={The Science and Information Organisation}
+}
+
+@INPROCEEDINGS{6533929,
+  author={Krishnan, Y. Navaneeth and Shobha, G},
+  booktitle={2013 International Conference on Green High Performance Computing (ICGHPC)}, 
+  title={Performance analysis of OSPF and EIGRP routing protocols for greener internetworking}, 
+  year={2013},
+  volume={},
+  number={},
+  pages={1-4},
+  doi={10.1109/ICGHPC.2013.6533929}}
+
+@INPROCEEDINGS{8067958,
+  author={Athira, M and Abrahami, Lekha and Sangeetha, R. G.},
+  booktitle={2017 International Conference on Nextgen Electronic Technologies: Silicon to Software (ICNETS2)}, 
+  title={Study on network performance of interior gateway protocols — RIP, EIGRP and OSPF}, 
+  year={2017},
+  volume={},
+  number={},
+  pages={344-348},
+  doi={10.1109/ICNETS2.2017.8067958}}
+
+@INPROCEEDINGS{9358327,
+  author={Biradar, Ambresh G.},
+  booktitle={2020 5th IEEE International Conference on Recent Advances and Innovations in Engineering (ICRAIE)}, 
+  title={A Comparative Study on Routing Protocols: RIP, OSPF and EIGRP and Their Analysis Using GNS-3}, 
+  year={2020},
+  volume={},
+  number={},
+  pages={1-5},
+  doi={10.1109/ICRAIE51050.2020.9358327}}
+
+@techreport{zinin2003alternative,
+  title={Alternative implementations of OSPF area border routers},
+  author={Zinin, A and Lindem, A and Yeung, D},
+  year={2003}
+}
+
+@book{retana2000eigrp,
+  title={EIGRP for IP: basic operation and configuration},
+  author={Retana, Alvaro and White, Russ and Slice, Don},
+  year={2000},
+  publisher={Pearson Education}
+}
+
+@misc{isaac_2021, title={Facebook and its apps suffer another outage.}, url={https://www.nytimes.com/2021/10/08/technology/facebook-whatsapp-instagram-down.html}, journal={The New York Times}, publisher={The New York Times}, author={Isaac, Mike}, year={2021}, month={Oct}} 
+
+@inproceedings{de2008z3,
+  title={Z3: An efficient SMT solver},
+  author={De Moura, Leonardo and Bj{\o}rner, Nikolaj},
+  booktitle={Tools and Algorithms for the Construction and Analysis of Systems: 14th International Conference, TACAS 2008, Held as Part of the Joint European Conferences on Theory and Practice of Software, ETAPS 2008, Budapest, Hungary, March 29-April 6, 2008. Proceedings 14},
+  pages={337--340},
+  year={2008},
+  organization={Springer}
+}
+
+@techreport{malkin1998rip,
+  title={RIP version 2},
+  author={Malkin, Gary},
+  year={1998}
+}
+
+@techreport{oran1990osi,
+  title={OSI IS-IS intra-domain routing protocol},
+  author={Oran, David},
+  year={1990}
+}
+
+@article{Kodzo2016,
+title = {Performance Analysis of Enhanced Interior Gateway Routing Protocol (EIGRP) Over Open Shortest Path First (OSPF) Protocol with Opnet},
+journal = {International Journal of Advanced Computer Science and Applications},
+doi = {10.14569/IJACSA.2016.070512},
+url = {http://dx.doi.org/10.14569/IJACSA.2016.070512},
+year = {2016},
+publisher = {The Science and Information Organization},
+volume = {7},
+number = {5},
+author = {Anibrika Bright Selorm Kodzo and Mustapha Adamu Mohammed and Ashigbi Franklin Degadzor and Michael Asante}
+}
+
+@article{10.1145/2639988.2655736, author = {Bailis, Peter and Kingsbury, Kyle}, title = {The Network is Reliable: An Informal Survey of Real-World Communications Failures}, year = {2014}, issue_date = {July 2014}, publisher = {Association for Computing Machinery}, address = {New York, NY, USA}, volume = {12}, number = {7}, issn = {1542-7730}, url = {https://doi.org/10.1145/2639988.2655736}, doi = {10.1145/2639988.2655736}, abstract = {The network is reliable tops Peter Deutsch’s classic list, "Eight fallacies of distributed computing", "all [of which] prove to be false in the long run and all [of which] cause big trouble and painful learning experiences." Accounting for and understanding the implications of network behavior is key to designing robust distributed programs; in fact, six of Deutsch’s "fallacies" directly pertain to limitations on networked communications. This should be unsurprising: the ability (and often requirement) to communicate over a shared channel is a defining characteristic of distributed programs, and many of the key results in the field pertain to the possibility and impossibility of performing distributed computations under particular sets of network conditions.}, journal = {Queue}, month = {jul}, pages = {20–32}, numpages = {13} }
